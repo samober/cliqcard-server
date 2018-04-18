@@ -12,6 +12,8 @@ setup(
         'pyjwt',
         'flask-bcrypt',
         'phonenumbers',
-        'twilio'
+        'twilio',
+        'gunicorn',
+        'flask-script'
     ],
 )

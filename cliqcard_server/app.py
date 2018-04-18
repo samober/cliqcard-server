@@ -75,6 +75,11 @@ def create_app(config_name):
     app.add_url_rule('/groups/<int:group_id>/code', view_func=GroupsView.get_join_code, methods=['GET'])
     app.add_url_rule('/groups/<int:group_id>/members', view_func=GroupsView.get_members, methods=['GET'])
 
+    # setup contacts endpoints
+    from cliqcard_server.views.contacts import ContactsView
+    contacts_view = ContactsView.as_view('contacts_view')
+    app.add_url_rule('/contacts', view_func=contacts_view, methods=['GET'])
+
     return app
 
 

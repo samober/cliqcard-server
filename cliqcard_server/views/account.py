@@ -1,9 +1,10 @@
 import datetime
 from flask import request, jsonify, abort
 from flask.views import MethodView
+from authlib.flask.oauth2 import current_token
 from cliqcard_server.models import db, User, RegistrationToken, RefreshToken, Card
 from cliqcard_server.serializers import serialize_account
-from cliqcard_server.utils import require_token, format_phone_number, generate_access_token
+from cliqcard_server.utils import require_oauth, format_phone_number, generate_access_token
 from cliqcard_server.extensions import bcrypt
 
 
@@ -12,9 +13,9 @@ class AccountView(MethodView):
     Handles the /account endpoint for getting, updating, and deleting accounts.
     """
 
-    @require_token
+    @require_oauth(None)
     def get(self):
-        return jsonify(serialize_account(request.user))
+        return jsonify(serialize_account(current_token.user))
 
     def post(self):
         # get phone number and registration token
@@ -97,9 +98,9 @@ class AccountView(MethodView):
         response.status_code = 201
         return response
 
-    @require_token
+    @require_oauth(None)
     def put(self):
-        user = request.user
+        user = current_token.user
 
         phone_number = request.json.get('phone_number')
         if phone_number is not None:
@@ -121,8 +122,8 @@ class AccountView(MethodView):
 
         return jsonify(serialize_account(user))
 
-    @require_token
+    @require_oauth(None)
     def delete(self):
-        db.session.delete(request.user)
+        db.session.delete(current_token.user)
         db.session.commit()
         return ('', 204)

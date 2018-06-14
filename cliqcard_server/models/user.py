@@ -30,6 +30,9 @@ class User(db.Model):
     def __repr__(self):
         return '<User %d: %s %s>' % (self.id, self.first_name, self.last_name)
 
+    def get_user_id(self):
+        return self.id
+
     @property
     def personal_card(self):
         for card in self.cards:

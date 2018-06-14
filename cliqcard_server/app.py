@@ -23,6 +23,12 @@ def create_app(config_name):
     from cliqcard_server.extensions import bcrypt
     bcrypt.init_app(app)
 
+    # setup oauth
+    from cliqcard_server.extensions import setup_oauth_server
+    oauth_server = setup_oauth_server(app)
+
+
+
     # error handlers
 
     @app.errorhandler(401)
@@ -42,16 +48,18 @@ def create_app(config_name):
         return response
 
     # set up auth endpoints
-    from cliqcard_server.views.auth import VerifyPhoneView, LoginView, GetRegistrationTokenView, RefreshAccessTokenView
+    from cliqcard_server.views.auth import VerifyPhoneView, GetRegistrationTokenView, RefreshAccessTokenView
     app.add_url_rule('/verify_phone', view_func=VerifyPhoneView.as_view('verify_phone'), methods=['POST'])
-    app.add_url_rule('/login', view_func=LoginView.as_view('login'), methods=['POST'])
-    app.add_url_rule('/register', view_func=GetRegistrationTokenView.as_view('register'), methods=['POST'])
-    app.add_url_rule('/token', view_func=RefreshAccessTokenView.as_view('refresh_token'), methods=['POST'])
+    # app.add_url_rule('/register', view_func=GetRegistrationTokenView.as_view('register'), methods=['POST'])
+
+    # oauth endpoints
+    @app.route('/oauth/token', methods=['POST'])
+    def issue_token():
+        return oauth_server.create_token_response()
 
     # setup account endpoints
     from cliqcard_server.views.account import AccountView
-    account_view = AccountView.as_view('account')
-    app.add_url_rule('/account', view_func=account_view, methods=['GET', 'POST', 'PUT', 'DELETE'])
+    app.add_url_rule('/account', view_func=AccountView.as_view('account'), methods=['GET', 'POST', 'PUT', 'DELETE'])
 
     # set up user endpoints
     from cliqcard_server.views.user import UserAPI
@@ -59,26 +67,14 @@ def create_app(config_name):
     app.add_url_rule('/users', defaults={'user_id': None}, view_func=user_view, methods=['GET'])
     app.add_url_rule('/users/<int:user_id>', view_func=user_view, methods=['GET'])
 
-    # set up card endpoints
-    from cliqcard_server.views.cards import CardsView
-    cards_view = CardsView.as_view('cards_view')
-    app.add_url_rule('/cards', defaults={'card_type': None}, view_func=cards_view, methods=['GET'])
-    app.add_url_rule('/cards/<string:card_type>', view_func=cards_view, methods=['GET', 'PUT'])
+    from cliqcard_server.views import cards
+    app.register_blueprint(cards.bp)
 
-    # setup group endpoints
-    from cliqcard_server.views.groups import GroupsView
-    groups_view = GroupsView.as_view('groups_view')
-    app.add_url_rule('/groups', defaults={'group_id': None}, view_func=groups_view, methods=['GET', 'POST'])
-    app.add_url_rule('/groups/<int:group_id>', view_func=groups_view, methods=['GET', 'PUT'])
-    app.add_url_rule('/groups', view_func=groups_view, methods=['POST'])
-    app.add_url_rule('/groups/join', view_func=GroupsView.join_group, methods=['POST'])
-    app.add_url_rule('/groups/<int:group_id>/code', view_func=GroupsView.get_join_code, methods=['GET'])
-    app.add_url_rule('/groups/<int:group_id>/members', view_func=GroupsView.get_members, methods=['GET'])
+    from cliqcard_server.views import contacts
+    app.register_blueprint(contacts.bp)
 
-    # setup contacts endpoints
-    from cliqcard_server.views.contacts import ContactsView
-    contacts_view = ContactsView.as_view('contacts_view')
-    app.add_url_rule('/contacts', view_func=contacts_view, methods=['GET'])
+    from cliqcard_server.views import groups
+    app.register_blueprint(groups.bp)
 
     return app
 

@@ -1,5 +1,8 @@
+import datetime
 from cliqcard_server.models import Card
 
+def iso8601(date):
+    return date.isoformat()
 
 def serialize_account(objects):
     def serialize(obj):
@@ -9,8 +12,9 @@ def serialize_account(objects):
             'email': obj.email,
             'first_name': obj.first_name,
             'last_name': obj.last_name,
-            'created_at': obj.created_at,
-            'updated_at': obj.updated_at
+            'full_name': '%s %s' % (obj.first_name, obj.last_name),
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at)
         }
 
     if not objects:
@@ -27,8 +31,9 @@ def serialize_user(objects):
             'id': obj.id,
             'first_name': obj.first_name,
             'last_name': obj.last_name,
-            'created_at': obj.created_at,
-            'updated_at': obj.updated_at
+            'full_name': '%s %s' % (obj.first_name, obj.last_name),
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at)
         }
 
     if not objects:
@@ -62,8 +67,8 @@ def serialize_card(objects, omit_label=True):
         if obj.label == Card.CardLabel.personal:
             retval = {
                 'id': obj.id,
-                'created_at': obj.created_at,
-                'updated_at': obj.updated_at,
+                'created_at': iso8601(obj.created_at),
+                'updated_at': iso8601(obj.updated_at),
                 'label': 'personal',
                 'cell_phone': obj.phone1,
                 'home_phone': obj.phone2,
@@ -76,8 +81,8 @@ def serialize_card(objects, omit_label=True):
         else:
             retval = {
                 'id': obj.id,
-                'created_at': obj.created_at,
-                'updated_at': obj.updated_at,
+                'created_at': iso8601(obj.created_at),
+                'updated_at': iso8601(obj.updated_at),
                 'label': 'work',
                 'office_phone': obj.phone1,
                 'email': obj.email,
@@ -98,8 +103,8 @@ def serialize_group(objects):
     def serialize(obj):
         return {
             'id': obj.id,
-            'created_at': obj.created_at,
-            'updated_at': obj.updated_at,
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at),
             'name': obj.name,
             'member_count': obj.member_count
         }

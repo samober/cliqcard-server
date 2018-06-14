@@ -1,13 +1,13 @@
 from flask import request, jsonify, abort
 from flask.views import MethodView
 from cliqcard_server.models import db, User
-from cliqcard_server.utils import require_token
+from cliqcard_server.utils import require_oauth
 from cliqcard_server.serializers import serialize_user
 
 
 class UserAPI(MethodView):
 
-    @require_token
+    @require_oauth(None)
     def get(self, user_id):
         if user_id is None:
             # return all users

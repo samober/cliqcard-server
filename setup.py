@@ -14,6 +14,7 @@ setup(
         'phonenumbers',
         'twilio',
         'gunicorn',
-        'flask-script'
+        'flask-script',
+        'authlib'
     ],
 )

@@ -1,21 +1,21 @@
-from flask import request, abort, jsonify
-from flask.views import MethodView
+from flask import request, abort, jsonify, Blueprint
 from cliqcard_server.models import db, Address
-from cliqcard_server.utils import require_token, format_phone_number
+from cliqcard_server.utils import require_oauth, current_token, format_phone_number
 from cliqcard_server.serializers import serialize_card
 
 
-class CardsView(MethodView):
-    """
-    Handles all the endpoints for manipulating cards.
-    """
+bp = Blueprint('cards', __name__, url_prefix='/cards')
 
-    @require_token
-    def get(self, card_type):
+
+@bp.route('/', methods=['GET'])
+@bp.route('/<string:card_type>', methods=['GET', 'PUT'])
+@require_oauth(None)
+def get(card_type=None):
+    if request.method == 'GET':
         if not card_type:
             # return both cards
-            personal_card = request.user.personal_card
-            work_card = request.user.work_card
+            personal_card = current_token.user.personal_card
+            work_card = current_token.user.work_card
             return jsonify({
                 'personal': serialize_card(personal_card),
                 'work': serialize_card(work_card)
@@ -23,9 +23,9 @@ class CardsView(MethodView):
         else:
             # return a specific card
             if card_type == 'personal':
-                card = request.user.personal_card
+                card = current_token.user.personal_card
             elif card_type == 'work':
-                card = request.user.work_card
+                card = current_token.user.work_card
             else:
                 card = None
             if not card:
@@ -35,11 +35,9 @@ class CardsView(MethodView):
                 response.status_code = 400
                 return response
             return jsonify(serialize_card(card))
-
-    @require_token
-    def put(self, card_type):
+    elif request.method == 'PUT':
         if card_type == 'personal':
-            card = request.user.personal_card
+            card = current_token.user.personal_card
             # format cell phone
             cell_phone = request.json.get('cell_phone')
             if cell_phone:
@@ -51,7 +49,7 @@ class CardsView(MethodView):
                 home_phone = format_phone_number(home_phone)
             card.phone2 = home_phone
         elif card_type == 'work':
-            card = request.user.work_card
+            card = current_token.user.work_card
             # format office phone
             office_phone = request.json.get('office_phone')
             if office_phone:

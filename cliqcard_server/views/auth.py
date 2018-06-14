@@ -1,6 +1,7 @@
 import random
 import string
 import datetime
+import time
 import secrets
 from flask import request, jsonify, abort
 from flask.views import View
@@ -27,24 +28,24 @@ class VerifyPhoneView(View):
             response.status_code = 400
             return response
         # create a random validation code
-        validation_code = ''.join(random.choice(string.digits) for _ in range(6))
+        code = ''.join(random.choice(string.digits) for _ in range(6))
         # find and remove any existing phone tokens for this phone number
         for phone_token in PhoneToken.query.filter_by(phone_number=phone_number):
             db.session.delete(phone_token)
         # save a new phone token
         phone_token = PhoneToken(
             phone_number=phone_number,
-            validation_code=validation_code,
-            expiration=datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            code=code
         )
         db.session.add(phone_token)
         db.session.commit()
-        # send the validation code to the phone number over SMS
-        twilio_client.messages.create(
-            to=phone_number,
-            from_=twilio_phone_number,
-            body='Your CliqCard validation code is: %s' % validation_code
-        )
+        # # send the code to the phone number over SMS
+        # twilio_client.messages.create(
+        #     to=phone_number,
+        #     from_=twilio_phone_number,
+        #     body='Your CliqCard validation code is: %s' % code
+        # )
+        print('Code: %s' % code)
         # try to find a user with this phone number
         user = User.query.filter_by(phone_number=phone_number).first()
         if not user:
@@ -64,59 +65,6 @@ class VerifyPhoneView(View):
             })
 
 
-class LoginView(View):
-    """
-    View that accepts a phone number and valid verification code in exchange for an access token.
-    """
-
-    def dispatch_request(self):
-        phone_number = request.json['phone_number']
-        validation_code = request.json['validation_code']
-        # validate/format phone number
-        phone_number = format_phone_number(phone_number)
-        if not phone_number:
-            response = jsonify({
-                'error': 'Invalid phone number. You must send phone numbers in valid international format.'
-            })
-            response.status_code = 400
-            return response
-        # try to find a matching phone token
-        phone_token = PhoneToken.query.filter_by(phone_number=phone_number, validation_code=validation_code).first()
-        if not phone_token:
-            # invalid attempt
-            abort(401)
-        elif datetime.datetime.utcnow() > phone_token.expiration:
-            # token is expired - delete from database
-            db.session.delete(phone_token)
-            db.session.commit()
-            response = jsonify({
-                'message': 'The validation code for that number has expired.'
-            })
-            response.status_code = 401
-            return response
-        else:
-            # attempt to find the user with this phone number
-            user = User.query.filter_by(phone_number=phone_number).first()
-            if not user:
-                abort(401)
-            # delete the phone_token
-            db.session.delete(phone_token)
-            # create a new access token
-            access_token = generate_access_token(user.id)
-            # create a new refresh token
-            refresh_token = RefreshToken(token=RefreshToken.generate_random_token(), user_id=user.id)
-            db.session.add(refresh_token)
-            # commit the session
-            db.session.commit()
-            return jsonify({
-                'token': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token.token
-                },
-                'user': serialize_account(user)
-            })
-
-
 class GetRegistrationTokenView(View):
     """
     View that accepts a phone number and valid validation code and returns a token that lets new users
@@ -125,7 +73,7 @@ class GetRegistrationTokenView(View):
 
     def dispatch_request(self):
         phone_number = request.json['phone_number']
-        validation_code = request.json['validation_code']
+        code = request.json['code']
         # validate/format phone number
         phone_number = format_phone_number(phone_number)
         if not phone_number:
@@ -135,11 +83,11 @@ class GetRegistrationTokenView(View):
             response.status_code = 400
             return response
         # try to find a matching phone token
-        phone_token = PhoneToken.query.filter_by(phone_number=phone_number, validation_code=validation_code).first()
+        phone_token = PhoneToken.query.filter_by(phone_number=phone_number, code=code).first()
         if not phone_token:
             # invalid attempt
             abort(401)
-        elif datetime.datetime.utcnow() > phone_token.expiration:
+        elif int(time.time()) > phone_token.expiration:
             # token is expired - delete from database
             db.session.delete(phone_token)
             db.session.commit()

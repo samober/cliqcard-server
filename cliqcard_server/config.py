@@ -5,6 +5,7 @@ class Config(object):
     DEBUG = False
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://localhost/cliqcard')
+    OAUTH2_REFRESH_TOKEN_GENERATOR = True
 
 
 class DevelopmentConfig(Config):

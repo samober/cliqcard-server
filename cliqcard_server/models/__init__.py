@@ -11,3 +11,5 @@ from .address import Address
 from .group import Group
 from .group_member import GroupMember
 from .group_join_code import GroupJoinCode
+from .oauth_client import OAuthClient
+from .oauth_token import OAuthToken

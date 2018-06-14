@@ -1,7 +1,4 @@
-from flask_bcrypt import Bcrypt
 from twilio.rest import Client
-
-bcrypt = Bcrypt()
 
 # setup twilio client
 twilio_account_ssid = 'AC0966cb68e64dfb6fed8de1269ed97c02'

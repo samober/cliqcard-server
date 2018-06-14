@@ -1,5 +1,6 @@
 import datetime
-from functools import wraps
+import random
+import string
 import jwt
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
@@ -8,6 +9,7 @@ from cliqcard_server.models import db, OAuthToken
 
 from authlib.flask.oauth2.sqla import create_bearer_token_validator
 from authlib.flask.oauth2 import ResourceProtector, current_token
+
 
 def format_phone_number(phone_number):
     # check if phone number has leading '+', if not add it for the phonenumbers parser
@@ -22,12 +24,20 @@ def format_phone_number(phone_number):
         # if the phone number is invalid return None
         return None
 
+
 def generate_access_token(user_id):
     return jwt.encode({
         'user_id': user_id,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
     }, current_app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
 
+
+def generate_short_code(n, letters=True):
+    if letters:
+        characters = string.ascii_uppercase + string.digits
+    else:
+        characters = string.digits
+    return ''.join(random.choice(characters) for _ in range(n))
 
 
 BearerTokenValidator = create_bearer_token_validator(db.session, OAuthToken)

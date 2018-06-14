@@ -4,12 +4,12 @@ from cliqcard_server.serializers import serialize_user, serialize_address
 from authlib.flask.oauth2 import current_token
 
 
-bp = Blueprint('contacts', __name__, url_prefix='/contacts')
+contacts = Blueprint('contacts', __name__, url_prefix='/contacts')
 
 
-@bp.route('/', methods=['GET'])
+@contacts.route('/', methods=['GET'])
 @require_oauth(None)
-def contacts():
+def get():
     # get all groups for this user
     groups = list(current_token.user.groups)
     group_members = []

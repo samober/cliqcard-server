@@ -20,8 +20,6 @@ class User(db.Model):
 
     email = db.Column(db.String(120), unique=True)
 
-    refresh_token = db.relationship('RefreshToken', backref='user', lazy=True, uselist=False)
-
     cards = db.relationship('Card', backref='user', lazy=True)
 
     groups = association_proxy('group_members', 'group')

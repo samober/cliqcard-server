@@ -1,22 +1,25 @@
-from flask import request, jsonify, abort
-from flask.views import MethodView
-from cliqcard_server.models import db, User
+from flask import jsonify, Blueprint
+from cliqcard_server.models import User
 from cliqcard_server.utils import require_oauth
 from cliqcard_server.serializers import serialize_user
+from cliqcard_server.errors import NotFoundError
 
 
-class UserAPI(MethodView):
+users = Blueprint('users', __name__, url_prefix='/users')
 
-    @require_oauth(None)
-    def get(self, user_id):
-        if user_id is None:
-            # return all users
-            users = User.query.all()
-            return jsonify(serialize_user(users))
+
+@users.route('/', methods=['GET'])
+@users.route('/<int:user_id>', methods=['GET'])
+@require_oauth(None)
+def get(user_id=None):
+    if user_id is None:
+        # return all users
+        users = User.query.all()
+        return jsonify(serialize_user(users))
+    else:
+        # get specific user by id
+        user = User.query.get(user_id)
+        if not user:
+            raise NotFoundError()
         else:
-            # get specific user by id
-            user = User.query.get(user_id)
-            if not user:
-                abort(404)
-            else:
-                return jsonify(serialize_user(user))
+            return jsonify(serialize_user(user))

@@ -1,17 +1,17 @@
-import datetime
 import random
 import string
-from flask import abort, jsonify, request, Blueprint
+from flask import jsonify, request, Blueprint
 from cliqcard_server.serializers import serialize_group, serialize_user, serialize_card, serialize_group_member
-from cliqcard_server.utils import require_oauth, current_token
+from cliqcard_server.utils import require_oauth, current_token, generate_short_code
 from cliqcard_server.models import db, Group, GroupMember, GroupJoinCode
+from cliqcard_server.errors import UnauthorizedError, NotFoundError, InvalidRequestError
 
 
-bp = Blueprint('groups', __name__, url_prefix='/groups')
+groups = Blueprint('groups', __name__, url_prefix='/groups')
 
 
-@bp.route('/', methods=['GET', 'POST'])
-@bp.route('/<int:group_id>', methods=['GET', 'PUT'])
+@groups.route('/', methods=['GET', 'POST'])
+@groups.route('/<int:group_id>', methods=['GET', 'PUT'])
 @require_oauth(None)
 def index(group_id=None):
     if request.method == 'GET':
@@ -23,12 +23,12 @@ def index(group_id=None):
             # get the specific group if the user is a member
             group = Group.query.get(group_id)
             if not group:
-                abort(404)
+                raise NotFoundError()
 
             # find the group member relationship between this group and user
             group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
             if not group_member:
-                abort(401)
+                raise UnauthorizedError()
 
             return jsonify({
                 'group': serialize_group(group),
@@ -64,12 +64,12 @@ def index(group_id=None):
     elif request.method == 'PUT':
         group = Group.query.get(group_id)
         if not group:
-            abort(404)
+            raise NotFoundError()
 
         # find the group member relationship between this group and user
         group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
         if not group_member:
-            abort(401)
+            raise UnauthorizedError()
 
         # change sharing settings
         group_member.shares_personal_card = request.json.get('share_personal_card', group_member.shares_personal_card)
@@ -90,18 +90,18 @@ def index(group_id=None):
         })
 
 
-@bp.route('/<int:group_id>/members', methods=['GET'], endpoint='group_members')
+@groups.route('/<int:group_id>/members', methods=['GET'], endpoint='group_members')
 @require_oauth(None)
 def members(group_id):
     # get the group
     group = Group.query.get(group_id)
     if not group:
-        abort(404)
+        raise NotFoundError()
 
     # check if a member
     group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
     if not group_member:
-        abort(401)
+        raise UnauthorizedError()
 
     # get all the group members
     group_members = list(group.group_members)
@@ -127,33 +127,32 @@ def members(group_id):
     return jsonify(results)
 
 
-@bp.route('/<int:group_id>/code', methods=['GET'], endpoint='group_join_code')
+@groups.route('/<int:group_id>/code', methods=['GET'], endpoint='group_join_code')
 @require_oauth(None)
 def code(group_id):
     # get the group
     group = Group.query.get(group_id)
     if not group:
-        abort(404)
+        raise NotFoundError()
 
     # check if a member
     group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
     if not group_member:
-        abort(401)
+        raise UnauthorizedError()
 
     # try to find an existing join code
     join_code = GroupJoinCode.query.filter_by(group_id=group.id).first()
 
     # check if expired
-    if join_code and datetime.datetime.utcnow() > join_code.expiration:
+    if join_code and join_code.is_expired():
         # code expired - delete it
         db.session.delete(join_code)
         join_code = None
 
     if not join_code:
         # generate a new code
-        code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
-        join_code = GroupJoinCode(group_id=group.id, code=code,
-                                  expiration=datetime.datetime.utcnow() + datetime.timedelta(days=14))
+        code = generate_short_code(6)
+        join_code = GroupJoinCode(group_id=group.id, code=code)
         db.session.add(join_code)
         db.session.commit()
 
@@ -166,27 +165,23 @@ def code(group_id):
     })
 
 
-@bp.route('/join', methods=['POST'], endpoint='join_group')
+@groups.route('/join', methods=['POST'], endpoint='join_group')
 @require_oauth(None)
 def join():
     # get join code
-    code = request.json['join_code']
+    code = request.json.get('join_code')
 
     # grab join settings
-    share_personal_card = request.json['share_personal_card']
-    share_work_card = request.json['share_work_card']
+    share_personal_card = request.json.get('share_personal_card')
+    share_work_card = request.json.get('share_work_card')
     share_home_phone = request.json.get('share_home_phone', True)
     share_cell_phone = request.json.get('share_cell_phone', True)
     share_office_phone = request.json.get('share_office_phone', True)
 
     # get the join code from the database
     join_code = GroupJoinCode.query.filter_by(code=code).first()
-    if not join_code or datetime.datetime.utcnow() > join_code.expiration:
-        response = jsonify({
-            'error': 'Invalid or expired join code.'
-        })
-        response.status_code = 400
-        return response
+    if not join_code or join_code.is_expired():
+        raise InvalidRequestError('Invalid or expired join code')
 
     # get the group
     group = join_code.group

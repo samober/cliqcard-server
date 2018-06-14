@@ -2,13 +2,14 @@ from flask import request, abort, jsonify, Blueprint
 from cliqcard_server.models import db, Address
 from cliqcard_server.utils import require_oauth, current_token, format_phone_number
 from cliqcard_server.serializers import serialize_card
+from cliqcard_server.errors import InvalidRequestError
 
 
-bp = Blueprint('cards', __name__, url_prefix='/cards')
+cards = Blueprint('cards', __name__, url_prefix='/cards')
 
 
-@bp.route('/', methods=['GET'])
-@bp.route('/<string:card_type>', methods=['GET', 'PUT'])
+@cards.route('/', methods=['GET'])
+@cards.route('/<string:card_type>', methods=['GET', 'PUT'])
 @require_oauth(None)
 def get(card_type=None):
     if request.method == 'GET':
@@ -29,11 +30,7 @@ def get(card_type=None):
             else:
                 card = None
             if not card:
-                response = jsonify({
-                    'error': "Only card types 'personal' and 'work' are allowed."
-                })
-                response.status_code = 400
-                return response
+                raise InvalidRequestError("Only card types 'personal' and 'work' are allowed.")
             return jsonify(serialize_card(card))
     elif request.method == 'PUT':
         if card_type == 'personal':
@@ -56,7 +53,7 @@ def get(card_type=None):
                 office_phone = format_phone_number(office_phone)
             card.phone1 = office_phone
         else:
-            abort(400)
+            raise InvalidRequestError("Only card types 'personal' and 'work' are allowed.")
 
         card.email = request.json.get('email')
 

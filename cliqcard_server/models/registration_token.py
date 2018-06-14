@@ -1,4 +1,4 @@
-import datetime
+import time
 from cliqcard_server.models import db
 
 
@@ -11,10 +11,13 @@ class RegistrationToken(db.Model):
     __tablename__ = 'registration_tokens'
 
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
-    expiration = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    issued_at = db.Column(db.Integer, nullable=False, default=int(time.time()))
+    expires_in = db.Column(db.Integer, nullable=False, default=3600)
     token = db.Column(db.String(256), nullable=False, unique=True)
     phone_number = db.Column(db.String(80), nullable=False, unique=True)
 
     def __repr__(self):
         return '<RegistrationToken %s>' % self.phone_number
+
+    def is_expired(self):
+        return int(time.time()) > self.issued_at + self.expires_in

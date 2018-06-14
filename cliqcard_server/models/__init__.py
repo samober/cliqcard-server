@@ -5,7 +5,6 @@ db = SQLAlchemy()
 from .user import User
 from .phone_token import PhoneToken
 from .registration_token import RegistrationToken
-from .refresh_token import RefreshToken
 from .card import Card
 from .address import Address
 from .group import Group

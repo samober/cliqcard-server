@@ -1,4 +1,3 @@
-from datetime import datetime
 from authlib.flask.oauth2.sqla import OAuth2ClientMixin
 from cliqcard_server.models import db
 

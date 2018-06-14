@@ -22,8 +22,8 @@ class NotFoundError(APIError):
 
 class UnauthorizedError(APIError):
 
-    def __init__(self):
-        APIError.__init__(self, 'You do not have access to this resource', status_code=401)
+    def __init__(self, message=None):
+        APIError.__init__(self, message or 'You do not have access to this resource', status_code=401)
 
 
 class InvalidRequestError(APIError):

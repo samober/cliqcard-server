@@ -1,7 +1,9 @@
+import time
 from flask import request, jsonify
 from flask.views import MethodView
 from authlib.flask.oauth2 import current_token
-from cliqcard_server.models import db, User, RegistrationToken, Card
+from authlib.common.security import generate_token
+from cliqcard_server.models import db, User, RegistrationToken, Card, OAuthClient, OAuthToken
 from cliqcard_server.serializers import serialize_account
 from cliqcard_server.utils import require_oauth, format_phone_number
 from cliqcard_server.extensions import bcrypt
@@ -19,6 +21,15 @@ class AccountView(MethodView):
 
 
     def post(self):
+        # get client credentials
+        client_id = request.json.get('client_id')
+        client_secret = request.json.get('client_secret')
+
+        # find the client
+        client = OAuthClient.query.filter_by(client_id=client_id, client_secret=client_secret).first()
+        if not client:
+            raise UnauthorizedError(message='Invalid client credentials')
+
         # get phone number and registration token
         phone_number = request.json.get('phone_number')
         raw_registration_token = request.json.get('registration_token')
@@ -74,11 +85,30 @@ class AccountView(MethodView):
         user.personal_card = Card(phone1=phone_number, email=email)
         user.work_card = Card()
 
+        # generate an access token for the user
+        token = OAuthToken()
+        token.client_id = client.client_id,
+        token.token_type = 'Bearer',
+        token.access_token = generate_token(),
+        token.refresh_token = generate_token(),
+        token.issued_at = int(time.time()),
+        token.expires_in = 3600,
+        token.user_id = user.id
+        db.session.add(token)
+
         # commit the session
         db.session.commit()
 
         # respond with the newly created account info
-        response = jsonify(serialize_account(user))
+        response = jsonify({
+            'token': {
+                'access_token': token.access_token,
+                'refresh_token': token.refresh_token,
+                'token_type': token.token_type,
+                'expires_in': token.expires_in
+            },
+            'user': serialize_account(user)
+        })
         response.status_code = 201
         return response
 

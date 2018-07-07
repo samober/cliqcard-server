@@ -4,6 +4,23 @@ from cliqcard_server.models import Card
 def iso8601(date):
     return date.isoformat()
 
+def serialize_profile_picture(objects):
+    def serialize(obj):
+        return {
+            'original': obj.original,
+            'thumb_big': obj.thumb_big,
+            'thumb_normal': obj.thumb_normal,
+            'thumb_small': obj.thumb_small,
+            'thumb_mini': obj.thumb_mini,
+        }
+
+    if not objects:
+        return None
+    elif isinstance(objects, list):
+        return [ serialize(obj) for obj in objects ]
+    else:
+        return serialize(objects)
+
 def serialize_account(objects):
     def serialize(obj):
         return {
@@ -15,13 +32,7 @@ def serialize_account(objects):
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
             'created_at': iso8601(obj.created_at),
             'updated_at': iso8601(obj.updated_at),
-            'profile_picture': {
-                'original': obj.profile_picture.original,
-                'thumb_big': obj.profile_picture.thumb_big,
-                'thumb_normal': obj.profile_picture.thumb_normal,
-                'thumb_small': obj.profile_picture.thumb_small,
-                'thumb_mini': obj.profile_picture.thumb_mini,
-            }
+            'profile_picture': serialize_profile_picture(obj.profile_picture)
         }
 
     if not objects:
@@ -41,13 +52,7 @@ def serialize_user(objects):
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
             'created_at': iso8601(obj.created_at),
             'updated_at': iso8601(obj.updated_at),
-            'profile_picture': {
-                'original': obj.profile_picture.original,
-                'thumb_big': obj.profile_picture.thumb_big,
-                'thumb_normal': obj.profile_picture.thumb_normal,
-                'thumb_small': obj.profile_picture.thumb_small,
-                'thumb_mini': obj.profile_picture.thumb_mini,
-            }
+            'profile_picture': serialize_profile_picture(obj.profile_picture)
         }
 
     if not objects:

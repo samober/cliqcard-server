@@ -8,10 +8,17 @@ from cliqcard_server.utils import format_phone_number
 
 # setup OAuth server
 
-query_client = create_query_client_func(db.session, OAuthClient)
-save_token = create_save_token_func(db.session, OAuthToken)
+def query_client(client_id):
+    return OAuthClient.query.filter_by(client_id=client_id).first()
 
-oauth_server = AuthorizationServer()
+# def save_token(token, request):
+#     if request.user:
+#         user_id = request.user.get_user_id()
+#     else:
+#         user_id = None
+#     item = OAuthToken(client_id=request.client.client_id, user_id=user_id, **token)
+#     db.session.add(item)
+#     db.session.commit()
 
 
 class PhoneTokenGrant(grants.BaseGrant):
@@ -81,10 +88,10 @@ class RefreshTokenGrant(grants.RefreshTokenGrant):
         return User.query.get(credential.user_id)
 
 
-oauth_server.register_grant(PhoneTokenGrant)
-oauth_server.register_grant(RefreshTokenGrant)
-
-
 def setup_oauth_server(app):
-    oauth_server.init_app(app, query_client=query_client, save_token=save_token)
+    save_token = create_save_token_func(db.session, OAuthToken)
+
+    oauth_server = AuthorizationServer(app, query_client=query_client, save_token=save_token)
+    oauth_server.register_grant(PhoneTokenGrant)
+    oauth_server.register_grant(RefreshTokenGrant)
     return oauth_server

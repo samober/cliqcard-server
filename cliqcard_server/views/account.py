@@ -149,10 +149,10 @@ def picture_upload():
     # create a new profile picture object
     profile_picture = ProfilePicture()
     profile_picture.original = upload_result['secure_url']
-    profile_picture.thumb_big = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
-    profile_picture.thumb_normal = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
-    profile_picture.thumb_small = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
-    profile_picture.thumb_mini = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
+    profile_picture.thumb_big, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
+    profile_picture.thumb_normal, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
+    profile_picture.thumb_small, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
+    profile_picture.thumb_mini, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
 
     # add to the user
     current_token.user.profile_picture = profile_picture

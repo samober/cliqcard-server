@@ -160,7 +160,7 @@ def code(group_id):
         'group': serialize_group(group),
         'join_code': {
             'code': join_code.code,
-            'expiration': join_code.expiration
+            'expires_in': join_code.expires_in
         }
     })
 

@@ -1,5 +1,4 @@
-import random
-import string
+import time
 from flask import jsonify, request, Blueprint
 from cliqcard_server.serializers import serialize_group, serialize_user, serialize_card, serialize_group_member
 from cliqcard_server.utils import require_oauth, current_token, generate_short_code
@@ -152,7 +151,7 @@ def code(group_id):
     if not join_code:
         # generate a new code
         code = generate_short_code(6)
-        join_code = GroupJoinCode(group_id=group.id, code=code)
+        join_code = GroupJoinCode(group_id=group.id, code=code, issued_at=int(time.time()), expires_in=43200) # <- 12 hours
         db.session.add(join_code)
         db.session.commit()
 

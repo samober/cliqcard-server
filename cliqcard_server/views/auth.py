@@ -100,7 +100,9 @@ def register():
         raw_token = secrets.token_urlsafe(64)
         registration_token = RegistrationToken(
             phone_number=phone_number,
-            token=bcrypt.generate_password_hash(raw_token).decode('utf-8')
+            token=bcrypt.generate_password_hash(raw_token).decode('utf-8'),
+            issued_at=int(time.time()),
+            expires_in=3600
         )
         db.session.add(registration_token)
         # commit the session

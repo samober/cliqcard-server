@@ -34,15 +34,15 @@ def index(group_id=None):
                 'sharing': serialize_group_member(group_member)
             })
     elif request.method == 'POST':
-        name = request.json['name']
-        share_personal_card = request.json['share_personal_card']
-        share_work_card = request.json['share_work_card']
+        name = request.json.get('name')
+        share_personal_card = request.json.get('share_personal_card')
+        share_work_card = request.json.get('share_work_card')
         share_home_phone = request.json.get('share_home_phone', True)
         share_cell_phone = request.json.get('share_cell_phone', True)
         share_office_phone = request.json.get('share_office_phone', True)
 
         # create the group
-        group = Group(name=name, admin_id=current_token.user.id)
+        group = Group(name=name)
         db.session.add(group)
         db.session.commit()
 

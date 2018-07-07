@@ -20,6 +20,8 @@ class User(db.Model):
 
     email = db.Column(db.String(120), unique=True)
 
+    profile_picture = db.Column(db.String(128))
+
     cards = db.relationship('Card', backref='user', lazy=True)
 
     groups = association_proxy('group_members', 'group')

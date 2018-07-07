@@ -7,6 +7,8 @@ from cliqcard_server.serializers import serialize_account
 from cliqcard_server.utils import require_oauth, format_phone_number
 from cliqcard_server.extensions import bcrypt
 from cliqcard_server.errors import InvalidRequestError, UnauthorizedError
+from cloudinary.uploader import upload
+from cloudinary.utils import cloudinary_url
 
 
 account = Blueprint('account', __name__, url_prefix='/account')
@@ -134,3 +136,14 @@ def post():
     })
     response.status_code = 201
     return response
+
+
+@account.route('/picture', methods=['POST'])
+@require_oauth(None)
+def picture_upload():
+    file_to_upload = request.files['file']
+    if not file_to_upload:
+        raise InvalidRequestError(message="You must specify the 'file' parameter")
+    upload_result = upload(file_to_upload)
+
+    return jsonify(upload_result)

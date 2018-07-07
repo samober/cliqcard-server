@@ -18,6 +18,7 @@ class PhoneTokenGrant(grants.BaseGrant):
     AUTHORIZATION_ENDPOINT = False
     TOKEN_ENDPOINT = True
     GRANT_TYPE = 'phone_token'
+    TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic']
 
     def validate_token_request(self):
         client = self.authenticate_token_endpoint_client()

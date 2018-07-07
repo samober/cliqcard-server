@@ -23,7 +23,6 @@ class User(db.Model):
     cards = db.relationship('Card', backref='user', lazy=True)
 
     groups = association_proxy('group_members', 'group')
-    managed_groups = db.relationship('Group', backref='admin', lazy=True)
 
     def __repr__(self):
         return '<User %d: %s %s>' % (self.id, self.first_name, self.last_name)

@@ -1,4 +1,5 @@
 import secrets
+import time
 from flask import request, jsonify, Blueprint
 from cliqcard_server.models import db, User, PhoneToken, RegistrationToken
 from cliqcard_server.extensions import bcrypt, twilio_client, twilio_phone_number
@@ -27,7 +28,9 @@ def phone():
     # save a new phone token
     phone_token = PhoneToken(
         phone_number=phone_number,
-        code=code
+        code=code,
+        issued_at=int(time.time()),
+        expires_in=3600
     )
     db.session.add(phone_token)
     db.session.commit()

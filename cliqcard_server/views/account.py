@@ -153,6 +153,7 @@ def picture_upload():
     thumbnail_url5, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=48, height=48)
 
     return jsonify({
+        'upload_result': upload_result,
         'thumbnail_url1': thumbnail_url1,
         'thumbnail_url2': thumbnail_url2,
         'thumbnail_url3': thumbnail_url3,

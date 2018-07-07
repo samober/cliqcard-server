@@ -146,4 +146,16 @@ def picture_upload():
         raise InvalidRequestError(message="You must specify the 'file' parameter")
     upload_result = upload(file_to_upload)
 
-    return jsonify(upload_result)
+    thumbnail_url1, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=100, height=100)
+    thumbnail_url2, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=200, height=100, radius=20, effect='sepia')
+    thumbnail_url3, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=200, height=200)
+    thumbnail_url4, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=80, height=80)
+    thumbnail_url5, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=48, height=48)
+
+    return jsonify({
+        'thumbnail_url1': thumbnail_url1,
+        'thumbnail_url2': thumbnail_url2,
+        'thumbnail_url3': thumbnail_url3,
+        'thumbnail_url4': thumbnail_url4,
+        'thumbnail_url5': thumbnail_url5
+    })

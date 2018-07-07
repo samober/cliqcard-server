@@ -81,7 +81,7 @@ class RefreshTokenGrant(grants.RefreshTokenGrant):
 
     def authenticate_refresh_token(self, refresh_token):
         item = OAuthToken.query.filter_by(refresh_token=refresh_token).first()
-        if item and not item.is_refresh_token_expired():
+        if item:
             return item
 
     def authenticate_user(self, credential):

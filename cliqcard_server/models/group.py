@@ -18,8 +18,6 @@ class Group(db.Model):
 
     name = db.Column(db.String(140), nullable=False)
 
-    admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
     members = association_proxy('group_members', 'user')
 
     def __repr__(self):

@@ -24,7 +24,7 @@ class Card(db.Model):
     email = db.Column(db.String(80))
     address = db.relationship('Address', backref='card', uselist=False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
     def __repr__(self):
         return '<Card %d>' % self.user_id

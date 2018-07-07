@@ -13,7 +13,7 @@ class GroupJoinCode(db.Model):
     issued_at = db.Column(db.Integer, nullable=False, default=int(time.time()))
     expires_in = db.Column(db.Integer, nullable=False, default=1209600)
 
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id', ondelete='CASCADE'), nullable=False)
     code = db.Column(db.String(12), nullable=False, unique=False)
 
     group = db.relationship('Group')

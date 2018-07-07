@@ -50,6 +50,7 @@ def index(group_id=None):
         group_member = GroupMember(
             user_id=current_token.user.id,
             group_id=group.id,
+            is_admin=True,
             shares_personal_card=share_personal_card,
             shares_work_card=share_work_card,
             shares_home_phone=share_home_phone,
@@ -78,7 +79,7 @@ def index(group_id=None):
         group_member.shares_office_phone = request.json.get('share_office_phone', group_member.shares_office_phone)
 
         # if this user is the admin they can change details about the group
-        if group.admin_id == current_token.user.id:
+        if group_member.is_admin:
             group.name = request.json.get('name', group.name)
 
         # commit changes
@@ -197,6 +198,7 @@ def join():
     group_member = GroupMember(
         group_id=group.id,
         user_id=current_token.user.id,
+        is_admin=False,
         shares_personal_card=share_personal_card,
         shares_work_card=share_work_card,
         shares_home_phone=share_home_phone,

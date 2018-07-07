@@ -95,6 +95,7 @@ def register():
         # delete any existing registration tokens for this phone number
         for registration_token in RegistrationToken.query.filter_by(phone_number=phone_number):
             db.session.delete(registration_token)
+        db.session.commit()
 
         # create a new registration token - use bcrypt to hash the raw token
         raw_token = secrets.token_urlsafe(64)

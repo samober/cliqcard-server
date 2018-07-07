@@ -113,15 +113,17 @@ def members(group_id):
     for group_member in group_members:
         obj = serialize_user(group_member.user)
         if group_member.shares_personal_card:
-            obj['personal_card'] = serialize_card(group_member.user.personal_card)
+            personal_card = serialize_card(group_member.user.personal_card)
             if not group_member.shares_home_phone:
-                obj['personal_card']['home_phone'] = None
+                personal_card['home_phone'] = None
             if not group_member.shares_cell_phone:
-                obj['personal_card']['cell_phone'] = None
+                personal_card['cell_phone'] = None
+            obj['personal_card'] = personal_card
         if group_member.shares_work_card:
-            obj['work_card'] = serialize_card(group_member.user.work_card)
+            work_card = serialize_card(group_member.user.work_card)
             if not group_member.shares_office_phone:
-                obj['personal_card']['office_phone'] = None
+                work_card['office_phone'] = None
+            obj['work_card'] = work_card
         results.append(obj)
 
     return jsonify(results)

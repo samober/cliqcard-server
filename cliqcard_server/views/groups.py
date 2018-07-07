@@ -9,7 +9,7 @@ from cliqcard_server.errors import UnauthorizedError, NotFoundError, InvalidRequ
 groups = Blueprint('groups', __name__, url_prefix='/groups')
 
 
-@groups.route('', methods=['GET', 'POST'])
+@groups.route('/', methods=['GET', 'POST'])
 @groups.route('/<int:group_id>', methods=['GET', 'PUT'])
 @require_oauth(None)
 def index(group_id=None):

@@ -15,6 +15,7 @@ def create_app(config_name):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config.from_envvar('CLIQCARD_SERVER_SETTINGS', silent=True)
     app.secret_key = '\x84\xeaE#\xa79\x9dN\xa1y:\x03\x1b\xe9b\x8c\x91\x83\x00\x0c\x9dKZ\xd9'
+    app.url_map.strict_slashes = False
 
     # setup database
     db.init_app(app)

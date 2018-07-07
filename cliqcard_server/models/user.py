@@ -3,6 +3,7 @@ from . import db
 from .card import Card
 
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import backref
 
 
 class User(db.Model):
@@ -20,9 +21,9 @@ class User(db.Model):
 
     email = db.Column(db.String(120), unique=True)
 
-    profile_picture = db.Column(db.String(128))
-
     cards = db.relationship('Card', backref='user', lazy=True)
+
+    profile_picture = db.relationship('ProfilePicture', backref=backref('user', uselist=False))
 
     groups = association_proxy('group_members', 'group')
 

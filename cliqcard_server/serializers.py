@@ -14,7 +14,14 @@ def serialize_account(objects):
             'last_name': obj.last_name,
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
             'created_at': iso8601(obj.created_at),
-            'updated_at': iso8601(obj.updated_at)
+            'updated_at': iso8601(obj.updated_at),
+            'profile_picture': {
+                'original': obj.profile_picture.original,
+                'thumb_big': obj.profile_picture.thumb_big,
+                'thumb_normal': obj.profile_picture.thumb_normal,
+                'thumb_small': obj.profile_picture.thumb_small,
+                'thumb_mini': obj.profile_picture.thumb_mini,
+            }
         }
 
     if not objects:
@@ -33,7 +40,14 @@ def serialize_user(objects):
             'last_name': obj.last_name,
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
             'created_at': iso8601(obj.created_at),
-            'updated_at': iso8601(obj.updated_at)
+            'updated_at': iso8601(obj.updated_at),
+            'profile_picture': {
+                'original': obj.profile_picture.original,
+                'thumb_big': obj.profile_picture.thumb_big,
+                'thumb_normal': obj.profile_picture.thumb_normal,
+                'thumb_small': obj.profile_picture.thumb_small,
+                'thumb_mini': obj.profile_picture.thumb_mini,
+            }
         }
 
     if not objects:

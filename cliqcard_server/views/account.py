@@ -2,7 +2,7 @@ import time
 from flask import request, jsonify, Blueprint
 from authlib.flask.oauth2 import current_token
 from authlib.common.security import generate_token
-from cliqcard_server.models import db, User, RegistrationToken, Card, OAuthClient, OAuthToken
+from cliqcard_server.models import db, User, RegistrationToken, Card, OAuthClient, OAuthToken, ProfilePicture
 from cliqcard_server.serializers import serialize_account
 from cliqcard_server.utils import require_oauth, format_phone_number
 from cliqcard_server.extensions import bcrypt
@@ -146,17 +146,18 @@ def picture_upload():
         raise InvalidRequestError(message="You must specify the 'file' parameter")
     upload_result = upload(file_to_upload)
 
-    thumbnail_url1, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=100, height=100)
-    thumbnail_url2, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=200, height=100, radius=20, effect='sepia')
-    thumbnail_url3, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=200, height=200)
-    thumbnail_url4, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=80, height=80)
-    thumbnail_url5, options = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=48, height=48)
+    # create a new profile picture object
+    profile_picture = ProfilePicture()
+    profile_picture.original = upload_result['secure_url']
+    profile_picture.thumb_big = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
+    profile_picture.thumb_normal = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
+    profile_picture.thumb_small = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
+    profile_picture.thumb_mini = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
 
-    return jsonify({
-        'upload_result': upload_result,
-        'thumbnail_url1': thumbnail_url1,
-        'thumbnail_url2': thumbnail_url2,
-        'thumbnail_url3': thumbnail_url3,
-        'thumbnail_url4': thumbnail_url4,
-        'thumbnail_url5': thumbnail_url5
-    })
+    # add to the user
+    current_token.user.profile_picture = profile_picture
+
+    # commit
+    db.session.commit()
+
+    return jsonify(serialize_account(current_token.user))

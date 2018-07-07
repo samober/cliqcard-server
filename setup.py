@@ -15,6 +15,7 @@ setup(
         'twilio',
         'gunicorn',
         'flask-script',
-        'authlib'
+        'authlib',
+        'cloudinary'
     ],
 )

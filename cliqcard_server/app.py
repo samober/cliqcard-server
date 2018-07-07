@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_migrate import Migrate
 from .config import app_config
 from .errors import APIError
-from .views import AccountView, oauth, cards, contacts, groups, users
+from .views import account, oauth, cards, contacts, groups, users
 from .extensions import bcrypt, setup_oauth_server
 from .models import db
 
@@ -41,7 +41,7 @@ def create_app(config_name):
         return oauth_server.create_token_response()
 
     app.register_blueprint(oauth)
-    app.add_url_rule('/account', view_func=AccountView.as_view('account'), methods=['GET', 'POST', 'PUT', 'DELETE'])
+    app.register_blueprint(account)
     app.register_blueprint(users)
     app.register_blueprint(cards)
     app.register_blueprint(contacts)

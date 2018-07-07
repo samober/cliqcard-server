@@ -10,7 +10,7 @@ groups = Blueprint('groups', __name__, url_prefix='/groups')
 
 
 @groups.route('/', methods=['GET', 'POST'])
-@groups.route('/<int:group_id>', methods=['GET', 'PUT'])
+@groups.route('/<int:group_id>', methods=['GET', 'PUT', 'DELETE'])
 @require_oauth(None)
 def index(group_id=None):
     if request.method == 'GET':
@@ -88,6 +88,55 @@ def index(group_id=None):
             'group': serialize_group(group),
             'sharing': serialize_group_member(group_member)
         })
+    elif request.method == 'DELETE':
+        group = Group.query.get(group_id)
+        if not group:
+            raise NotFoundError()
+
+        # find the group member relationship between this group and user
+        group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
+        if not group_member:
+            raise UnauthorizedError()
+
+        # make sure the user is an admin
+        if not group_member.is_admin:
+            raise UnauthorizedError()
+
+        # delete the group
+        db.session.delete(group)
+        db.session.commit()
+
+        return ('', 204)
+
+
+@groups.route('/<int:group_id>/leave', methods=['POST'], endpoint='leave_group')
+@require_oauth(None)
+def leave(group_id):
+    # get the group
+    group = Group.query.get(group_id)
+    if not group:
+        raise NotFoundError()
+
+    # check if a member
+    group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
+    if not group_member:
+        raise UnauthorizedError()
+
+    # check if an admin
+    if group_member.is_admin:
+        # make sure theyre not the only one left
+        admin_count = GroupMember.query.filter_by(group_id=group_id, is_admin=True).count()
+        if admin_count == 1:
+            # there can't be a group with no admins - he will have to pick someone before he leaves
+            raise InvalidRequestError(message='You must pick someone else to take your place as admin of the group'
+                                              'before you can leave.')
+
+    # delete the group member entry
+    db.session.delete(group_member)
+    db.session.commit()
+
+    return ('', 204)
+
 
 
 @groups.route('/<int:group_id>/members', methods=['GET'], endpoint='group_members')

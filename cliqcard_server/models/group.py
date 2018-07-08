@@ -18,6 +18,8 @@ class Group(db.Model):
 
     name = db.Column(db.String(140), nullable=False)
 
+    picture = db.relationship('GroupPicture', backref='group', uselist=False)
+
     members = association_proxy('group_members', 'user')
 
     def __repr__(self):

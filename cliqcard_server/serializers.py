@@ -21,6 +21,23 @@ def serialize_profile_picture(objects):
     else:
         return serialize(objects)
 
+def serialize_group_picture(objects):
+    def serialize(obj):
+        return {
+            'original': obj.original,
+            'thumb_big': obj.thumb_big,
+            'thumb_normal': obj.thumb_normal,
+            'thumb_small': obj.thumb_small,
+            'thumb_mini': obj.thumb_mini,
+        }
+
+    if not objects:
+        return None
+    elif isinstance(objects, list):
+        return [serialize(obj) for obj in objects]
+    else:
+        return serialize(objects)
+
 def serialize_account(objects):
     def serialize(obj):
         return {
@@ -125,7 +142,8 @@ def serialize_group(objects):
             'created_at': iso8601(obj.created_at),
             'updated_at': iso8601(obj.updated_at),
             'name': obj.name,
-            'member_count': obj.member_count
+            'member_count': obj.member_count,
+            'picture': serialize_group_picture(obj.picture)
         }
     if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]

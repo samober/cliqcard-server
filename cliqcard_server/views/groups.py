@@ -2,8 +2,10 @@ import time
 from flask import jsonify, request, Blueprint
 from cliqcard_server.serializers import serialize_group, serialize_user, serialize_card, serialize_group_member
 from cliqcard_server.utils import require_oauth, current_token, generate_short_code
-from cliqcard_server.models import db, Group, GroupMember, GroupJoinCode
+from cliqcard_server.models import db, Group, GroupMember, GroupJoinCode, GroupPicture
 from cliqcard_server.errors import UnauthorizedError, NotFoundError, InvalidRequestError
+from cloudinary.uploader import upload
+from cloudinary.utils import cloudinary_url
 
 
 groups = Blueprint('groups', __name__, url_prefix='/groups')
@@ -107,6 +109,48 @@ def index(group_id=None):
         db.session.commit()
 
         return ('', 204)
+
+
+@groups.route('/<int:group_id>/picture', methods=['POST', 'DELETE'])
+@require_oauth(None)
+def update_picture(group_id):
+    # get the group
+    group = Group.query.get(group_id)
+    if not group:
+        raise NotFoundError()
+
+    # check if a member and admin
+    group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
+    if not group_member or not group_member.is_admin:
+        raise UnauthorizedError()
+
+    if request.method == 'POST':
+        file_to_upload = request.files['file']
+        if not file_to_upload:
+            raise InvalidRequestError(message="You must specify the 'file' parameter")
+        upload_result = upload(file_to_upload)
+
+        # create a new group picture object
+        group_picture = GroupPicture()
+        group_picture.original = upload_result['secure_url']
+        group_picture.thumb_big, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
+        group_picture.thumb_normal, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
+        group_picture.thumb_small, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
+        group_picture.thumb_mini, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
+
+        # add to the group
+        group.picture = group_picture
+
+        # commit
+        db.session.commit()
+
+        return jsonify(serialize_group(group))
+    elif request.method == 'DELETE':
+        # remove the current group's picture
+        group.picture = None
+        # save
+        db.session.commit()
+        return jsonify(serialize_group(group))
 
 
 @groups.route('/<int:group_id>/leave', methods=['POST'], endpoint='leave_group')

@@ -1,7 +1,7 @@
 from datetime import datetime
 from cliqcard_server.models import db
 
-from sqlalchemy import func
+from sqlalchemy import func, exists, and_
 from sqlalchemy.ext.associationproxy import association_proxy
 
 
@@ -32,4 +32,4 @@ class Group(db.Model):
 
     def is_admin(self, user):
         from cliqcard_server.models import GroupMember
-        return db.session.query(func.count(GroupMember.user_id)).filter_by(group_id=self.id, user_id=user.id, is_admin=True).scalar() == 1
+        return db.session.query(exists().where(and_(GroupMember.group_id==self.id, GroupMember.user_id==user.id, GroupMember.is_admin==True))).scalar()

@@ -138,26 +138,33 @@ def post():
     return response
 
 
-@account.route('/picture', methods=['POST'])
+@account.route('/picture', methods=['POST', 'DELETE'])
 @require_oauth(None)
-def picture_upload():
-    file_to_upload = request.files['file']
-    if not file_to_upload:
-        raise InvalidRequestError(message="You must specify the 'file' parameter")
-    upload_result = upload(file_to_upload)
+def update_picture():
+    if request.method == 'POST':
+        file_to_upload = request.files['file']
+        if not file_to_upload:
+            raise InvalidRequestError(message="You must specify the 'file' parameter")
+        upload_result = upload(file_to_upload)
 
-    # create a new profile picture object
-    profile_picture = ProfilePicture()
-    profile_picture.original = upload_result['secure_url']
-    profile_picture.thumb_big, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
-    profile_picture.thumb_normal, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
-    profile_picture.thumb_small, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
-    profile_picture.thumb_mini, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
+        # create a new profile picture object
+        profile_picture = ProfilePicture()
+        profile_picture.original = upload_result['secure_url']
+        profile_picture.thumb_big, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=128, height=128)
+        profile_picture.thumb_normal, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=84, height=84)
+        profile_picture.thumb_small, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=58, height=58)
+        profile_picture.thumb_mini, _ = cloudinary_url(upload_result['public_id'], format='jpg', crop='fill', width=32, height=32)
 
-    # add to the user
-    current_token.user.profile_picture = profile_picture
+        # add to the user
+        current_token.user.profile_picture = profile_picture
 
-    # commit
-    db.session.commit()
+        # commit
+        db.session.commit()
 
-    return jsonify(serialize_account(current_token.user))
+        return jsonify(serialize_account(current_token.user))
+    elif request.method == 'DELETE':
+        # remove the current user's profile picture
+        current_token.user.profile_picture = None
+        # save
+        db.session.commit()
+        return jsonify(serialize_account(current_token.user))

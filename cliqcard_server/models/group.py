@@ -29,3 +29,7 @@ class Group(db.Model):
     def member_count(self):
         from cliqcard_server.models import GroupMember
         return db.session.query(func.count(GroupMember.user_id)).filter_by(group_id=self.id).scalar()
+
+    def is_admin(self, user):
+        from cliqcard_server.models import GroupMember
+        return db.session.query(func.count(GroupMember.user_id)).filter_by(group_id=self.id, user_id=user.id, is_admin=True).scalar() == 1

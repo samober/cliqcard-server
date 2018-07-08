@@ -1,5 +1,6 @@
 import datetime
 from cliqcard_server.models import Card
+from authlib.flask.oauth2 import current_token
 
 def iso8601(date):
     return date.isoformat()
@@ -143,7 +144,8 @@ def serialize_group(objects):
             'updated_at': iso8601(obj.updated_at),
             'name': obj.name,
             'member_count': obj.member_count,
-            'picture': serialize_group_picture(obj.picture)
+            'picture': serialize_group_picture(obj.picture),
+            'is_admin': obj.is_admin(current_token.user)
         }
     if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]

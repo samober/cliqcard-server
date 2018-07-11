@@ -1,6 +1,6 @@
 import time
 from flask import jsonify, request, Blueprint
-from cliqcard_server.serializers import serialize_group, serialize_user, serialize_card, serialize_group_member
+from cliqcard_server.serializers import serialize_group, serialize_user, serialize_email, serialize_phone
 from cliqcard_server.utils import require_oauth, current_token, generate_short_code
 from cliqcard_server.models import db, Group, GroupMember, GroupJoinCode, GroupPicture
 from cliqcard_server.errors import UnauthorizedError, NotFoundError, InvalidRequestError
@@ -31,17 +31,30 @@ def index(group_id=None):
             if not group_member:
                 raise UnauthorizedError()
 
-            return jsonify({
-                'group': serialize_group(group),
-                'sharing': serialize_group_member(group_member)
-            })
+            return jsonify(serialize_group(group))
     elif request.method == 'POST':
+        # get the group name
         name = request.json.get('name')
-        share_personal_card = request.json.get('share_personal_card')
-        share_work_card = request.json.get('share_work_card')
-        share_home_phone = request.json.get('share_home_phone', True)
-        share_cell_phone = request.json.get('share_cell_phone', True)
-        share_office_phone = request.json.get('share_office_phone', True)
+        if not name:
+            raise InvalidRequestError(message='Missing parameter \'name\'')
+
+        # grab the list of phones and emails to share
+        phone_ids = request.json.get('phone_ids', [])
+        email_ids = request.json.get('email_ids', [])
+
+        # get the phones and emails from the database
+        phones = [phone for phone in current_token.user.phones if phone.id in phone_ids]
+        # check if there is an invalid id
+        if len(phones) != len(phone_ids):
+            raise InvalidRequestError(message='Unrecognized phone id')
+        emails = [email for email in current_token.user.emails if email.id in email_ids]
+        # check if there is an invalid id
+        if len(emails) != len(email_ids):
+            raise InvalidRequestError(message='Unrecognized email id')
+
+        # make sure they are sharing at least one thing
+        if len(phones) + len(emails) == 0:
+            raise InvalidRequestError(message='You must share at least one piece of contact information')
 
         # create the group
         group = Group(name=name)
@@ -52,13 +65,10 @@ def index(group_id=None):
         group_member = GroupMember(
             user_id=current_token.user.id,
             group_id=group.id,
-            is_admin=True,
-            shares_personal_card=share_personal_card,
-            shares_work_card=share_work_card,
-            shares_home_phone=share_home_phone,
-            shares_cell_phone=share_cell_phone,
-            shares_office_phone=share_office_phone
+            is_admin=True
         )
+        group_member.phones = phones
+        group_member.emails = emails
         db.session.add(group_member)
         db.session.commit()
 
@@ -73,12 +83,27 @@ def index(group_id=None):
         if not group_member:
             raise UnauthorizedError()
 
-        # change sharing settings
-        group_member.shares_personal_card = request.json.get('share_personal_card', group_member.shares_personal_card)
-        group_member.shares_work_card = request.json.get('share_work_card', group_member.shares_work_card)
-        group_member.shares_home_phone = request.json.get('share_home_phone', group_member.shares_home_phone)
-        group_member.shares_cell_phone = request.json.get('share_cell_phone', group_member.shares_cell_phone)
-        group_member.shares_office_phone = request.json.get('share_office_phone', group_member.shares_office_phone)
+        # grab the list of phones and emails to share
+        phone_ids = request.json.get('phone_ids', [])
+        email_ids = request.json.get('email_ids', [])
+
+        # get the phones and emails from the database
+        phones = [phone for phone in current_token.user.phones if phone.id in phone_ids]
+        # check if there is an invalid id
+        if len(phones) != len(phone_ids):
+            raise InvalidRequestError(message='Unrecognized phone id')
+        emails = [email for email in current_token.user.emails if email.id in email_ids]
+        # check if there is an invalid id
+        if len(emails) != len(email_ids):
+            raise InvalidRequestError(message='Unrecognized email id')
+
+        # make sure they are sharing at least one thing
+        if len(phones) + len(emails) == 0:
+            raise InvalidRequestError(message='You must share at least one piece of contact information')
+
+        # update
+        group_member.phones = phones
+        group_member.emails = emails
 
         # if this user is the admin they can change details about the group
         if group_member.is_admin:
@@ -86,10 +111,7 @@ def index(group_id=None):
 
         # commit changes
         db.session.commit()
-        return jsonify({
-            'group': serialize_group(group),
-            'sharing': serialize_group_member(group_member)
-        })
+        return jsonify(serialize_group(group))
     elif request.method == 'DELETE':
         group = Group.query.get(group_id)
         if not group:
@@ -109,6 +131,26 @@ def index(group_id=None):
         db.session.commit()
 
         return ('', 204)
+
+
+@groups.route('/<int:group_id>/sharing', methods=['GET'])
+@require_oauth(None)
+def get_sharing(group_id):
+    # get the group
+    group = Group.query.get(group_id)
+    if not group:
+        raise NotFoundError()
+
+    # check if a member
+    group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
+    if not group_member:
+        raise UnauthorizedError()
+
+    # return the information the user is currently sharing
+    return jsonify({
+        'phones': serialize_phone(group_member.phones),
+        'emails': serialize_email(group_member.emails)
+    })
 
 
 @groups.route('/<int:group_id>/picture', methods=['POST', 'DELETE'])
@@ -205,18 +247,8 @@ def members(group_id):
     results = []
     for group_member in group_members:
         obj = serialize_user(group_member.user)
-        if group_member.shares_personal_card:
-            personal_card = serialize_card(group_member.user.personal_card)
-            if not group_member.shares_home_phone:
-                personal_card['home_phone'] = None
-            if not group_member.shares_cell_phone:
-                personal_card['cell_phone'] = None
-            obj['personal_card'] = personal_card
-        if group_member.shares_work_card:
-            work_card = serialize_card(group_member.user.work_card)
-            if not group_member.shares_office_phone:
-                work_card['office_phone'] = None
-            obj['work_card'] = work_card
+        obj['phones'] = serialize_phone(group_member.phones)
+        obj['emails'] = serialize_email(group_member.emails)
         results.append(obj)
 
     return jsonify(results)
@@ -266,12 +298,23 @@ def join():
     # get join code
     code = request.json.get('join_code')
 
-    # grab join settings
-    share_personal_card = request.json.get('share_personal_card')
-    share_work_card = request.json.get('share_work_card')
-    share_home_phone = request.json.get('share_home_phone', True)
-    share_cell_phone = request.json.get('share_cell_phone', True)
-    share_office_phone = request.json.get('share_office_phone', True)
+    # grab the list of phones and emails to share
+    phone_ids = request.json.get('phone_ids', [])
+    email_ids = request.json.get('email_ids', [])
+
+    # get the phones and emails from the database
+    phones = [phone for phone in current_token.user.phones if phone.id in phone_ids]
+    # check if there is an invalid id
+    if len(phones) != len(phone_ids):
+        raise InvalidRequestError(message='Unrecognized phone id')
+    emails = [email for email in current_token.user.emails if email.id in email_ids]
+    # check if there is an invalid id
+    if len(emails) != len(email_ids):
+        raise InvalidRequestError(message='Unrecognized email id')
+
+    # make sure they are sharing at least one thing
+    if len(phones) + len(emails) == 0:
+        raise InvalidRequestError(message='You must share at least one piece of contact information')
 
     # get the join code from the database
     join_code = GroupJoinCode.query.filter_by(code=code).first()
@@ -284,26 +327,17 @@ def join():
     # check if already a member
     group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
     if group_member:
-        return jsonify({
-            'group': serialize_group(group),
-            'sharing': serialize_group_member(group_member)
-        })
+        return jsonify(serialize_group(group))
 
     # create a new group member object
     group_member = GroupMember(
         group_id=group.id,
         user_id=current_token.user.id,
-        is_admin=False,
-        shares_personal_card=share_personal_card,
-        shares_work_card=share_work_card,
-        shares_home_phone=share_home_phone,
-        shares_cell_phone=share_cell_phone,
-        shares_office_phone=share_office_phone
+        is_admin=False
     )
+    group_member.phones = phones
+    group_member.emails = emails
     db.session.add(group_member)
     db.session.commit()
 
-    return jsonify({
-        'group': serialize_group(group),
-        'sharing': serialize_group_member(group_member)
-    })
+    return jsonify(serialize_group(group))

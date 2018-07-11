@@ -1,6 +1,5 @@
 import datetime as dt
 from . import db
-from .card import Card
 
 from sqlalchemy.ext.associationproxy import association_proxy
 
@@ -14,15 +13,13 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
 
-    phone_number = db.Column(db.String(20), unique=True, nullable=False)
     first_name = db.Column(db.String(80), nullable=False)
     last_name = db.Column(db.String(80), nullable=False)
-
-    email = db.Column(db.String(120), unique=True)
-
-    cards = db.relationship('Card', backref='user', lazy=True)
-
     profile_picture = db.relationship('ProfilePicture', backref='user', uselist=False)
+
+    phones = db.relationship('Phone', backref='user')
+    emails = db.relationship('Email', backref='user')
+    addresses = db.relationship('Address', backref='user')
 
     groups = association_proxy('group_members', 'group')
 
@@ -33,37 +30,11 @@ class User(db.Model):
         return self.id
 
     @property
-    def personal_card(self):
-        for card in self.cards:
-            if card.label == Card.CardLabel.personal:
-                return card
-        return None
-
-    @personal_card.setter
-    def personal_card(self, value):
-        # delete old card
-        for card in self.cards:
-            if card.label == Card.CardLabel.personal:
-                db.session.delete(card)
-        value.user = self
-        value.label = Card.CardLabel.personal
-        db.session.add(value)
-        db.session.commit()
+    def primary_phone(self):
+        from .phone import Phone
+        return Phone.query.filter_by(user_id=self.id, is_primary=True).first()
 
     @property
-    def work_card(self):
-        for card in self.cards:
-            if card.label == Card.CardLabel.work:
-                return card
-        return None
-
-    @work_card.setter
-    def work_card(self, value):
-        # delete old card
-        for card in self.cards:
-            if card.label == Card.CardLabel.work:
-                db.session.delete(card)
-        value.user = self
-        value.label = Card.CardLabel.work
-        db.session.add(value)
-        db.session.commit()
+    def primary_email(self):
+        from .email import Email
+        return Email.query.filter_by(user_id=self.id, is_primary=True).first()

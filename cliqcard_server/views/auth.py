@@ -1,7 +1,7 @@
 import secrets
 import time
 from flask import request, jsonify, Blueprint
-from cliqcard_server.models import db, User, PhoneToken, RegistrationToken
+from cliqcard_server.models import db, User, PhoneToken, RegistrationToken, Phone
 from cliqcard_server.extensions import bcrypt, twilio_client, twilio_phone_number
 from cliqcard_server.utils import format_phone_number, generate_short_code
 from cliqcard_server.errors import InvalidRequestError, UnauthorizedError
@@ -11,7 +11,7 @@ oauth = Blueprint('oauth', __name__, url_prefix='/oauth')
 
 
 @oauth.route('/phone', methods=['POST'])
-def phone():
+def verify_phone():
     phone_number = request.json.get('phone_number')
     # validate/format phone number
     phone_number = format_phone_number(phone_number)
@@ -44,8 +44,8 @@ def phone():
     # print('Code: %s' % code)
 
     # try to find a user with this phone number
-    user = User.query.filter_by(phone_number=phone_number).first()
-    if not user:
+    phone = Phone.query.filter_by(number=phone_number, is_primary=True).first()
+    if not phone:
         # no user associated with this phone
         return jsonify({
             'phone_number_registered': False,
@@ -55,9 +55,9 @@ def phone():
         # send back the user's first name so client device's can welcome them
         return jsonify({
             'phone_number_registered': True,
-            'phone_number': phone_number,
+            'phone_number': phone.number,
             'user': {
-                'first_name': user.first_name
+                'first_name': phone.user.first_name
             }
         })
 
@@ -84,8 +84,8 @@ def register():
         raise InvalidRequestError('The validation code for that number has expired')
     else:
         # check to make sure there is not already an account with this number
-        user = User.query.filter_by(phone_number=phone_number).first()
-        if user is not None:
+        phone = Phone.query.filter_by(number=phone_number, is_primary=True).first()
+        if phone is not None:
             # user already exists
             raise UnauthorizedError()
 

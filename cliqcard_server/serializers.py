@@ -1,9 +1,44 @@
-import datetime
-from cliqcard_server.models import Card
 from authlib.flask.oauth2 import current_token
 
 def iso8601(date):
     return date.isoformat()
+
+def serialize_phone(objects):
+    def serialize(obj):
+        return {
+            'id': obj.id,
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at),
+            'type': obj.type,
+            'number': obj.number,
+            'extension': obj.extension,
+            'is_primary': obj.is_primary
+        }
+
+    if isinstance(objects, list):
+        return [ serialize(obj) for obj in objects ]
+    elif not objects:
+        return None
+    else:
+        return serialize(objects)
+
+def serialize_email(objects):
+    def serialize(obj):
+        return {
+            'id': obj.id,
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at),
+            'type': obj.type,
+            'address': obj.address,
+            'is_primary': obj.is_primary
+        }
+
+    if isinstance(objects, list):
+        return [ serialize(obj) for obj in objects ]
+    elif not objects:
+        return None
+    else:
+        return serialize(objects)
 
 def serialize_profile_picture(objects):
     def serialize(obj):
@@ -15,10 +50,10 @@ def serialize_profile_picture(objects):
             'thumb_mini': obj.thumb_mini,
         }
 
-    if not objects:
-        return None
-    elif isinstance(objects, list):
+    if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]
+    elif not objects:
+        return None
     else:
         return serialize(objects)
 
@@ -32,10 +67,10 @@ def serialize_group_picture(objects):
             'thumb_mini': obj.thumb_mini,
         }
 
-    if not objects:
+    if isinstance(objects, list):
+        return [ serialize(obj) for obj in objects ]
+    elif not objects:
         return None
-    elif isinstance(objects, list):
-        return [serialize(obj) for obj in objects]
     else:
         return serialize(objects)
 
@@ -43,20 +78,20 @@ def serialize_account(objects):
     def serialize(obj):
         return {
             'id': obj.id,
-            'phone_number': obj.phone_number,
-            'email': obj.email,
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at),
             'first_name': obj.first_name,
             'last_name': obj.last_name,
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
-            'created_at': iso8601(obj.created_at),
-            'updated_at': iso8601(obj.updated_at),
-            'profile_picture': serialize_profile_picture(obj.profile_picture)
+            'profile_picture': serialize_profile_picture(obj.profile_picture),
+            'phones': serialize_phone(obj.phones),
+            'emails': serialize_email(obj.emails)
         }
 
-    if not objects:
-        return None
-    elif isinstance(objects, list):
+    if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]
+    elif not objects:
+        return None
     else:
         return serialize(objects)
 
@@ -65,18 +100,18 @@ def serialize_user(objects):
     def serialize(obj):
         return {
             'id': obj.id,
+            'created_at': iso8601(obj.created_at),
+            'updated_at': iso8601(obj.updated_at),
             'first_name': obj.first_name,
             'last_name': obj.last_name,
             'full_name': '%s %s' % (obj.first_name, obj.last_name),
-            'created_at': iso8601(obj.created_at),
-            'updated_at': iso8601(obj.updated_at),
             'profile_picture': serialize_profile_picture(obj.profile_picture)
         }
 
-    if not objects:
-        return None
-    elif isinstance(objects, list):
+    if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]
+    elif not objects:
+        return None
     else:
         return serialize(objects)
 
@@ -91,47 +126,10 @@ def serialize_address(objects):
             'zip': obj.zip,
             'country': obj.country
         }
-    if not objects:
-        return None
-    elif isinstance(objects, list):
+    if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]
-    else:
-        return serialize(objects)
-
-
-def serialize_card(objects, omit_label=True):
-    def serialize(obj):
-        if obj.label == Card.CardLabel.personal:
-            retval = {
-                'id': obj.id,
-                'created_at': iso8601(obj.created_at),
-                'updated_at': iso8601(obj.updated_at),
-                'label': 'personal',
-                'cell_phone': obj.phone1,
-                'home_phone': obj.phone2,
-                'email': obj.email,
-                'address': serialize_address(obj.address)
-            }
-            if omit_label:
-                del retval['label']
-            return retval
-        else:
-            retval = {
-                'id': obj.id,
-                'created_at': iso8601(obj.created_at),
-                'updated_at': iso8601(obj.updated_at),
-                'label': 'work',
-                'office_phone': obj.phone1,
-                'email': obj.email,
-                'address': serialize_address(obj.address)
-            }
-            if omit_label:
-                del retval['label']
-            return retval
-    if not objects:
+    elif not objects:
         return None
-    elif isinstance(objects, list):
-        return [ serialize(obj) for obj in objects ]
     else:
         return serialize(objects)
 
@@ -146,23 +144,6 @@ def serialize_group(objects):
             'member_count': obj.member_count,
             'picture': serialize_group_picture(obj.picture),
             'is_admin': obj.is_admin(current_token.user)
-        }
-    if isinstance(objects, list):
-        return [ serialize(obj) for obj in objects ]
-    elif not objects:
-        return None
-    else:
-        return serialize(objects)
-
-
-def serialize_group_member(objects):
-    def serialize(obj):
-        return {
-            'personal_card': obj.shares_personal_card,
-            'work_card': obj.shares_work_card,
-            'home_phone': obj.shares_home_phone,
-            'cell_phone': obj.shares_cell_phone,
-            'office_phone': obj.shares_office_phone
         }
     if isinstance(objects, list):
         return [ serialize(obj) for obj in objects ]

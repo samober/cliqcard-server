@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_migrate import Migrate
 from .config import app_config
 from .errors import APIError
-from .views import account, oauth, cards, contacts, groups, users
+from .views import account, oauth, contacts, groups, users, phones, emails
 from .extensions import bcrypt, setup_oauth_server
 from .models import db
 
@@ -43,9 +43,10 @@ def create_app(config_name):
     app.register_blueprint(oauth)
     app.register_blueprint(account)
     app.register_blueprint(users)
-    app.register_blueprint(cards)
     app.register_blueprint(contacts)
     app.register_blueprint(groups)
+    app.register_blueprint(phones)
+    app.register_blueprint(emails)
 
     return app
 

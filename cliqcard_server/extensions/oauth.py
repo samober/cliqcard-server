@@ -1,4 +1,4 @@
-from cliqcard_server.models import db, OAuthClient, OAuthToken, User, PhoneToken
+from cliqcard_server.models import db, OAuthClient, OAuthToken, User, PhoneToken, Phone
 from authlib.flask.oauth2 import AuthorizationServer
 from authlib.flask.oauth2.sqla import create_query_client_func, create_save_token_func
 from authlib.specs.rfc6749 import grants
@@ -58,16 +58,16 @@ class PhoneTokenGrant(grants.BaseGrant):
             raise InvalidRequestError('This validation code is expired.')
 
         # find the user
-        user = User.query.filter_by(phone_number=phone_number).first()
+        phone = Phone.query.filter_by(number=phone_number, is_primary=True).first()
         # delete the phone token
         db.session.delete(phone_token)
         db.session.commit()
 
-        if not user:
+        if not phone:
             raise InvalidRequestError('No account is associated with this phone number.')
 
         self.request.client = client
-        self.request.user = user
+        self.request.user = phone.user
 
     def create_token_response(self):
         client = self.request.client

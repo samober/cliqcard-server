@@ -51,6 +51,9 @@ def get(user_id=None):
             contact['emails'] = serialize_email(contact['emails'])
             serialized_contacts.append(contact)
 
+        # sort alphabetically
+        serialized_contacts = sorted(serialized_contacts, key=lambda contact: contact.firstName.lower())
+
         # return the list
         return jsonify(serialized_contacts)
     else:

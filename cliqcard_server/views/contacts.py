@@ -52,7 +52,7 @@ def get(user_id=None):
             serialized_contacts.append(contact)
 
         # sort alphabetically
-        serialized_contacts = sorted(serialized_contacts, key=lambda contact: contact.firstName.lower())
+        serialized_contacts = sorted(serialized_contacts, key=lambda contact: contact['first_name'].lower())
 
         # return the list
         return jsonify(serialized_contacts)

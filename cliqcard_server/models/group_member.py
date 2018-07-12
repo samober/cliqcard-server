@@ -28,8 +28,8 @@ class GroupMember(db.Model):
 
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
-    user = db.relationship('User', backref=db.backref('group_members'))
-    group = db.relationship('Group', backref=db.backref('group_members'))
+    user = db.relationship('User', backref=db.backref('group_members', cascade='all, delete-orphan', order_by='GroupMember.created_at.desc()'))
+    group = db.relationship('Group', backref=db.backref('group_members', cascade='all, delete-orphan'))
 
     phones = db.relationship("Phone", secondary=group_members_phones_table, backref='group_members')
     emails = db.relationship("Email", secondary=group_members_emails_table, backref='group_members')

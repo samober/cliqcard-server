@@ -241,7 +241,7 @@ def members(group_id):
     # get all the group members
     group_members = list(group.group_members)
     # remove the current user
-    group_members.remove(group_member)
+    # group_members.remove(group_member)
 
     # serialize
     results = []

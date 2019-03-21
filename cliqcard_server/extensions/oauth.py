@@ -73,7 +73,7 @@ class PhoneTokenGrant(grants.BaseGrant):
         client = self.request.client
         token = self.generate_token(client, self.GRANT_TYPE)
         self.server.save_token(token, self.request)
-        token = self.process_token(token, self.request)
+        self.execute_hook('process_token', self, token=token)
         return 200, token, self.TOKEN_RESPONSE_HEADER
 
 

@@ -249,6 +249,7 @@ def members(group_id):
         obj = serialize_user(group_member.user)
         obj['phones'] = serialize_phone(group_member.phones)
         obj['emails'] = serialize_email(group_member.emails)
+        obj['is_admin'] = group_member.is_admin
         results.append(obj)
 
     return jsonify(results)

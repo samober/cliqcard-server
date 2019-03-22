@@ -255,6 +255,36 @@ def members(group_id):
     return jsonify(results)
 
 
+@groups.route('/<int:group_id>/members/<int:user_id>', methods=['DELETE'], endpoint='group_members_delete')
+@require_oauth(None)
+def remove_member(group_id, user_id):
+    # get the group
+    group = Group.query.get(group_id)
+    if not group:
+        raise NotFoundError()
+
+    # check if a member
+    group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_token.user.id).first()
+    if not group_member:
+        raise UnauthorizedError()
+
+    # check if an admin user and that user_id is not the current user
+    if not group_member.is_admin and current_token.user.id != user_id:
+        raise UnauthorizedError()
+
+    # get the group member to remove
+    remove_group_member = GroupMember.query.filter_by(group_id=group.id, user_id=user_id)
+    if not remove_group_member:
+        raise UnauthorizedError()
+
+    # remove the group member
+    db.session.delete(remove_group_member)
+    db.session.commit()
+
+    # return success
+    return ('', 204)
+
+
 @groups.route('/<int:group_id>/code', methods=['GET'], endpoint='group_join_code')
 @require_oauth(None)
 def code(group_id):

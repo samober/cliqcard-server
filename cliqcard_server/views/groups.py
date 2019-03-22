@@ -269,7 +269,7 @@ def remove_member(group_id, user_id):
         raise UnauthorizedError()
 
     # check if an admin user and that user_id is not the current user
-    if not group_member.is_admin and current_token.user.id != user_id:
+    if not group_member.is_admin or current_token.user.id == user_id:
         raise UnauthorizedError()
 
     # get the group member to remove

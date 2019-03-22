@@ -273,7 +273,7 @@ def remove_member(group_id, user_id):
         raise UnauthorizedError()
 
     # get the group member to remove
-    remove_group_member = GroupMember.query.filter_by(group_id=group.id, user_id=user_id)
+    remove_group_member = GroupMember.query.filter_by(group_id=group.id, user_id=user_id).first()
     if not remove_group_member:
         raise UnauthorizedError()
 
